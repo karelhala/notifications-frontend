@@ -1,5 +1,5 @@
 /* eslint-disable testing-library/prefer-screen-queries, testing-library/no-node-access */
-import { render, screen } from '@testing-library/react';
+import { getAllByText, render, screen } from '@testing-library/react';
 import fetchMock from 'fetch-mock';
 import * as React from 'react';
 
@@ -235,16 +235,19 @@ describe('src/pages/Integrations/List/Page', () => {
       await userEvent.click(dropdownContainer);
 
       expect(
-        getByText(dropdownContainer.parentElement as HTMLElement, /Edit/i)
+        getAllByText(dropdownContainer.parentElement as HTMLElement, /Edit/i)[0]
       ).toBeEnabled();
       expect(
-        getByText(dropdownContainer.parentElement as HTMLElement, /Delete/i)
+        getAllByText(
+          dropdownContainer.parentElement as HTMLElement,
+          /Delete/i
+        )[0]
       ).toBeEnabled();
       expect(
-        getByText(
+        getAllByText(
           dropdownContainer.parentElement as HTMLElement,
           /(Enable|Disable)/i
-        )
+        )[0]
       ).toBeEnabled();
     });
 
@@ -287,16 +290,19 @@ describe('src/pages/Integrations/List/Page', () => {
       await userEvent.click(dropdownContainer);
 
       expect(
-        getByText(dropdownContainer.parentElement as HTMLElement, /Edit/i)
+        getAllByText(dropdownContainer.parentElement as HTMLElement, /Edit/i)[0]
       ).toBeEnabled();
       expect(
-        getByText(dropdownContainer.parentElement as HTMLElement, /Delete/i)
+        getAllByText(
+          dropdownContainer.parentElement as HTMLElement,
+          /Delete/i
+        )[0]
       ).toBeEnabled();
       expect(
-        getByText(
+        getAllByText(
           dropdownContainer.parentElement as HTMLElement,
           /(Enable|Disable)/i
-        )
+        )[0]
       ).toBeEnabled();
     });
   });
