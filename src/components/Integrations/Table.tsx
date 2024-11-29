@@ -114,6 +114,7 @@ const toTableRows = (
   integrations: Array<IntegrationRow>,
   onEnable?: OnEnable
 ): IRow[] => {
+  console.log(integrations, 'this is integrations!!!');
   return integrations.reduce((rows, integration, idx) => {
     rows.push({
       id: integration.id,

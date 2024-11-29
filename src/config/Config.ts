@@ -12,6 +12,7 @@ import {
   IntegrationIcon,
   IntegrationIconTypes,
   IntegrationType,
+  UserIntegrationSubType,
   UserIntegrationType,
 } from '../types/Integration';
 import { NotificationType } from '../types/Notification';

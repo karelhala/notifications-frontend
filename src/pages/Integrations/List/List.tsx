@@ -14,7 +14,10 @@ import { useContext, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppContext } from '../../../app/AppContext';
 import { IntegrationsEmptyState } from '../../../components/Integrations/EmptyState';
-import { IntegrationFilters } from '../../../components/Integrations/Filters';
+import {
+  IntegrationFilterColumn,
+  IntegrationFilters,
+} from '../../../components/Integrations/Filters';
 import {
   IntegrationRow,
   IntegrationsTable,
@@ -24,10 +27,7 @@ import { useDeleteModalReducer } from '../../../hooks/useDeleteModalReducer';
 import { useFormModalReducer } from '../../../hooks/useFormModalReducer';
 import { useIntegrations } from '../../../hooks/useIntegrations';
 import { usePage } from '../../../hooks/usePage';
-import {
-  useListIntegrationPQuery,
-  useListIntegrationsQuery,
-} from '../../../services/useListIntegrations';
+import { useListIntegrationPQuery } from '../../../services/useListIntegrations';
 import { NotificationAppState } from '../../../store/types/NotificationAppState';
 import {
   IntegrationCategory,
@@ -51,6 +51,7 @@ import {
   DrawerContentBody,
 } from '@patternfly/react-core';
 import IntegrationsDrawer from '../../../components/Integrations/IntegrationsDrawer';
+import { getIntegrations } from '../../../api/helpers/integrations/endpoints-helper';
 
 const userIntegrationCopier = (userIntegration: Partial<UserIntegration>) => ({
   ...userIntegration,
@@ -83,6 +84,10 @@ const IntegrationsList: React.FunctionComponent<IntegrationListProps> = ({
   const {
     rbac: { canWriteIntegrationsEndpoints },
   } = useContext(AppContext);
+  const [integrations, setIntegrations] = React.useState<{
+    data: UserIntegration[];
+    meta: { count: number };
+  } | null>(null);
 
   const integrationFilter = useIntegrationFilter();
   const userIntegrations = useIntegrations(category);
@@ -122,23 +127,28 @@ const IntegrationsList: React.FunctionComponent<IntegrationListProps> = ({
     sort.sortBy,
     category
   );
-  const integrationsQuery = useListIntegrationsQuery(pageData.page);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const fetchIntegrations = React.useCallback(async (config) => {
+    setIntegrations(null);
+    const data = await getIntegrations(config);
+    setIntegrations(data);
+  }, []);
+
+  React.useEffect(() => {
+    fetchIntegrations({
+      size: pageData.page.size,
+      index: pageData.page.index,
+      filters: integrationFilter.filters,
+      sortBy: sort.sortBy,
+      category: userIntegrations,
+    });
+  }, [userIntegrations]);
+
   const exportIntegrationsQuery = useListIntegrationPQuery();
 
-  const integrations = React.useMemo(() => {
-    const payload = integrationsQuery.payload;
-    if (payload?.type === 'IntegrationPage') {
-      return payload.value;
-    }
-
-    return {
-      data: [],
-      count: 0,
-    };
-  }, [integrationsQuery.payload]);
-
   const integrationRows = useIntegrationRows(
-    integrations.data,
+    integrations?.data || [],
     dispatch,
     savedNotificationScope
   );
@@ -240,25 +250,35 @@ const IntegrationsList: React.FunctionComponent<IntegrationListProps> = ({
 
   const closeFormModal = React.useCallback(
     (saved: boolean) => {
-      const query = integrationsQuery.query;
       modalIsOpenActions.reset();
       if (saved) {
-        query();
+        fetchIntegrations({
+          size: pageData.page.size,
+          index: pageData.page.index,
+          filters: integrationFilter.filters,
+          sortBy: sort.sortBy,
+          category: userIntegrations,
+        });
       }
     },
-    [modalIsOpenActions, integrationsQuery.query]
+    [modalIsOpenActions]
   );
 
   const closeDeleteModal = React.useCallback(
     (deleted: boolean) => {
-      const query = integrationsQuery.query;
       if (deleted) {
-        query();
+        fetchIntegrations({
+          size: pageData.page.size,
+          index: pageData.page.index,
+          filters: integrationFilter.filters,
+          sortBy: sort.sortBy,
+          category: userIntegrations,
+        });
       }
 
       deleteModalActions.reset();
     },
-    [deleteModalActions, integrationsQuery.query]
+    [deleteModalActions]
   );
 
   useEffect(() => {
@@ -270,13 +290,16 @@ const IntegrationsList: React.FunctionComponent<IntegrationListProps> = ({
   const loadingCount =
     Math.min(
       pageData.page.size,
-      integrations.count - (pageData.page.index - 1) * pageData.page.size
+      (integrations?.meta.count || 0) -
+        (pageData.page.index - 1) * pageData.page.size
     ) || 10;
 
   const integrationsEmpty =
-    integrations.count < 1 &&
-    !integrationsQuery.loading &&
+    (integrations?.meta.count || 0) < 1 &&
+    !integrations === null &&
     Object.values(integrationFilter.filters).every((filter) => !filter);
+
+  console.log(integrationFilter, 'this is integrationFilter');
 
   return (
     <>
@@ -298,18 +321,70 @@ const IntegrationsList: React.FunctionComponent<IntegrationListProps> = ({
             }
             onExport={onExport}
             filters={integrationFilter.filters}
-            setFilters={integrationFilter.setFilters}
-            clearFilters={integrationFilter.clearFilter}
-            count={integrations.count || 0}
-            pageCount={integrations.data.length}
+            setFilters={{
+              [IntegrationFilterColumn.ENABLED]: (value) => {
+                integrationFilter.setFilters[IntegrationFilterColumn.ENABLED](
+                  value
+                );
+                fetchIntegrations({
+                  size: pageData.page.size,
+                  index: pageData.page.index,
+                  filters: integrationFilter.filters,
+                  sortBy: sort.sortBy,
+                  category: userIntegrations,
+                });
+              },
+              [IntegrationFilterColumn.NAME]: (value) => {
+                integrationFilter.setFilters[IntegrationFilterColumn.NAME](
+                  value
+                );
+                fetchIntegrations({
+                  size: pageData.page.size,
+                  index: pageData.page.index,
+                  filters: integrationFilter.filters,
+                  sortBy: sort.sortBy,
+                  category: userIntegrations,
+                });
+              },
+            }}
+            clearFilters={(...columns) => {
+              integrationFilter.clearFilter(...columns);
+              fetchIntegrations({
+                size: pageData.page.size,
+                index: pageData.page.index,
+                filters: integrationFilter.filters,
+                sortBy: sort.sortBy,
+                category: userIntegrations,
+              });
+            }}
+            count={integrations?.meta.count || 0}
+            pageCount={integrations?.data.length || 0}
             page={pageData.page.index}
             perPage={pageData.page.size}
-            pageChanged={pageData.changePage}
-            perPageChanged={pageData.changeItemsPerPage}
+            pageChanged={(...page) => {
+              pageData.changePage(...page);
+              fetchIntegrations({
+                size: pageData.page.size,
+                index: pageData.page.index,
+                filters: integrationFilter.filters,
+                sortBy: sort.sortBy,
+                category: userIntegrations,
+              });
+            }}
+            perPageChanged={(...perPage) => {
+              pageData.changeItemsPerPage(...perPage);
+              fetchIntegrations({
+                size: pageData.page.size,
+                index: pageData.page.index,
+                filters: integrationFilter.filters,
+                sortBy: sort.sortBy,
+                category: userIntegrations,
+              });
+            }}
           >
             {!isBehaviorGroupsEnabled ? (
               <IntegrationsTable
-                isLoading={integrationsQuery.loading}
+                isLoading={integrations === null}
                 loadingCount={loadingCount}
                 integrations={integrationRows.rows}
                 onCollapse={integrationRows.onCollapse}
@@ -319,7 +394,16 @@ const IntegrationsList: React.FunctionComponent<IntegrationListProps> = ({
                     : undefined
                 }
                 actionResolver={actionResolver}
-                onSort={sort.onSort}
+                onSort={(...sortData) => {
+                  sort.onSort(...sortData);
+                  fetchIntegrations({
+                    size: pageData.page.size,
+                    index: pageData.page.index,
+                    filters: integrationFilter.filters,
+                    sortBy: sort.sortBy,
+                    category: userIntegrations,
+                  });
+                }}
                 sortBy={sort.sortBy}
               />
             ) : (
@@ -331,20 +415,22 @@ const IntegrationsList: React.FunctionComponent<IntegrationListProps> = ({
                 >
                   <DrawerContent
                     panelContent={
-                      <IntegrationsDrawer
-                        actionResolver={actionResolver}
-                        selectedIndex={integrationRows.rows?.findIndex(
-                          ({ id }) =>
-                            focusedIntegration && id === focusedIntegration.id
-                        )}
-                        selectedIntegration={focusedIntegration}
-                        setSelectedIntegration={setFocusedIntegration}
-                      />
+                      focusedIntegration && (
+                        <IntegrationsDrawer
+                          actionResolver={actionResolver}
+                          selectedIndex={integrationRows.rows?.findIndex(
+                            ({ id }) =>
+                              focusedIntegration && id === focusedIntegration.id
+                          )}
+                          selectedIntegration={focusedIntegration}
+                          setSelectedIntegration={setFocusedIntegration}
+                        />
+                      )
                     }
                   >
                     <DrawerContentBody>
                       <DataViewIntegrationsTable
-                        isLoading={integrationsQuery.loading}
+                        isLoading={integrations === null}
                         loadingCount={loadingCount}
                         integrations={integrationRows.rows}
                         onCollapse={integrationRows.onCollapse}
@@ -388,7 +474,15 @@ const IntegrationsList: React.FunctionComponent<IntegrationListProps> = ({
           isEdit={modalIsOpenState.isEdit}
           template={modalIsOpenState.template}
           closeModal={modalIsOpenActions.reset}
-          afterSubmit={integrationsQuery.query}
+          afterSubmit={() =>
+            fetchIntegrations({
+              size: pageData.page.size,
+              index: pageData.page.index,
+              filters: integrationFilter.filters,
+              sortBy: sort.sortBy,
+              category: userIntegrations,
+            })
+          }
           category={category}
         />
       )}

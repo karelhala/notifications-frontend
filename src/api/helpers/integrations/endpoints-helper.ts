@@ -1,8 +1,25 @@
-import { EndpointDTO } from '@redhat-cloud-services/integrations-client/dist/types';
+import { Endpoint } from '@redhat-cloud-services/integrations-client/dist/types';
 import { getIntegrationsApi } from '../../api';
 import { AxiosRequestConfig } from 'axios';
+import {
+  Direction,
+  Filters,
+  UserIntegrationType,
+} from '../../../types/Integration';
+import { IntegrationFilterColumn } from '../../../components/Integrations/Filters';
 
 const integrationsApi = getIntegrationsApi();
+
+export type GetIntegrationParams = {
+  size: number;
+  index: number;
+  filters?: Filters<typeof IntegrationFilterColumn>;
+  sortBy?: {
+    readonly column: string;
+    readonly direction: Direction;
+  };
+  category?: readonly UserIntegrationType[];
+};
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const formatError = (error: any): string => {
@@ -17,7 +34,7 @@ const formatError = (error: any): string => {
 };
 
 export async function createEndpoint(
-  config: EndpointDTO,
+  config: Endpoint,
   notifications?: any, // eslint-disable-line @typescript-eslint/no-explicit-any
   afterSubmit?: () => void
 ) {
@@ -40,7 +57,7 @@ export async function createEndpoint(
 
 export async function updateEndpoint(
   id: string,
-  data: EndpointDTO,
+  data: Endpoint,
   config?: AxiosRequestConfig,
   notifications?: any, // eslint-disable-line @typescript-eslint/no-explicit-any
   afterSubmit?: () => void
@@ -60,4 +77,17 @@ export async function updateEndpoint(
       formatError(e)
     ) || console.error(e);
   }
+}
+
+export async function getIntegrations(config: GetIntegrationParams) {
+  return await getIntegrationsApi().getIntegrations({
+    limit: config.size,
+    active: config.filters?.enabled,
+    name: config.filters?.name,
+    offset: (config.index - 1) * config.size,
+    sortBy: config.sortBy
+      ? `${config.sortBy?.column}:${config.sortBy?.direction}`
+      : '',
+    type: config.category,
+  });
 }

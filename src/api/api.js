@@ -12,6 +12,7 @@ import getEventTypes from '@redhat-cloud-services/notifications-client/dist/Noti
 // Integrations endpoints
 import createEndpoint from '@redhat-cloud-services/integrations-client/dist/EndpointResourceV1CreateEndpoint';
 import updateEndpoint from '@redhat-cloud-services/integrations-client/dist/EndpointResourceV1UpdateEndpoint';
+import getIntegrations from '@redhat-cloud-services/integrations-client/dist/v2/EndpointResourceV2GetEndpoints';
 
 // Time config endpoints
 import getTimePreference from '@redhat-cloud-services/notifications-client/dist/OrgConfigResourceV1GetDailyDigestTimePreference';
@@ -42,6 +43,7 @@ const integrationsApi = new APIFactory(
   {
     createEndpoint,
     updateEndpoint,
+    getIntegrations,
   },
   { axios: axiosInstance }
 );

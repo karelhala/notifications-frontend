@@ -24,6 +24,7 @@ export const getIntegrationIcon = (type: string): React.ReactElement | null => {
     ...defaultIconList['Communications'],
     ...defaultIconList['Reporting'],
   };
+  console.log(allIcons, 'this is allIcons');
   const integrationType: IntegrationIcon | undefined = Object.values(
     allIcons
   ).find((icon: IntegrationIcon) => icon.name === type);

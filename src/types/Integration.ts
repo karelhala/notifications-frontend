@@ -2,15 +2,37 @@ import { Schemas } from '../generated/OpenapiIntegrations';
 import { UUID } from './Notification';
 
 // Integrations that exist
+
+export enum IntegrationBaseType {
+  CAMEL = 'camel',
+}
+
+export const UserIntegrationBaseType = {
+  CAMEL: IntegrationBaseType.CAMEL,
+} as const;
+
+export enum IntegrationSubType {
+  WEBHOOK = 'webhook',
+  EMAIL_SUBSCRIPTION = 'email_subscription',
+  SPLUNK = 'splunk',
+  SLACK = 'slack',
+  SERVICE_NOW = 'servicenow',
+  TEAMS = 'teams',
+  GOOGLE_CHAT = 'google_chat',
+  ANSIBLE = 'ansible',
+  DRAWER = 'drawer',
+  PAGERDUTY = 'pagerduty',
+}
+
 // Value should always be type:sub_type or only type if doesn't use sub_types
 export enum IntegrationType {
   WEBHOOK = 'webhook',
   EMAIL_SUBSCRIPTION = 'email_subscription',
-  SPLUNK = 'camel:splunk',
-  SLACK = 'camel:slack',
-  SERVICE_NOW = 'camel:servicenow',
-  TEAMS = 'camel:teams',
-  GOOGLE_CHAT = 'camel:google_chat',
+  SPLUNK = `${IntegrationBaseType.CAMEL}:splunk`,
+  SLACK = `${IntegrationBaseType.CAMEL}:slack`,
+  SERVICE_NOW = `${IntegrationBaseType.CAMEL}:servicenow`,
+  TEAMS = `${IntegrationBaseType.CAMEL}:teams`,
+  GOOGLE_CHAT = `${IntegrationBaseType.CAMEL}:google_chat`,
   ANSIBLE = 'ansible', // Event-Driven Ansible
   DRAWER = 'drawer',
   PAGERDUTY = 'pagerduty',
@@ -25,6 +47,17 @@ export const UserIntegrationType = {
   TEAMS: IntegrationType.TEAMS,
   GOOGLE_CHAT: IntegrationType.GOOGLE_CHAT,
   PAGERDUTY: IntegrationType.PAGERDUTY,
+} as const;
+
+export const UserIntegrationSubType = {
+  WEBHOOK: IntegrationSubType.WEBHOOK,
+  ANSIBLE: IntegrationSubType.ANSIBLE,
+  SPLUNK: IntegrationSubType.SPLUNK,
+  SERVICE_NOW: IntegrationSubType.SERVICE_NOW,
+  SLACK: IntegrationSubType.SLACK,
+  TEAMS: IntegrationSubType.TEAMS,
+  GOOGLE_CHAT: IntegrationSubType.GOOGLE_CHAT,
+  PAGERDUTY: IntegrationSubType.PAGERDUTY,
 } as const;
 
 export enum IntegrationCategory {
@@ -54,6 +87,8 @@ export const isUserIntegrationType = (
 
 export type UserIntegrationType =
   (typeof UserIntegrationType)[keyof typeof UserIntegrationType];
+export type UserIntegrationSubType =
+  (typeof UserIntegrationSubType)[keyof typeof UserIntegrationSubType];
 
 export interface IntegrationBase<T extends IntegrationType> {
   id: string;
@@ -170,3 +205,18 @@ export type IntegrationIcon = {
 export type IntegrationIconTypes = {
   [Property in UserIntegrationType]: IntegrationIcon;
 };
+
+export declare enum Direction {
+  ASCENDING = 'ASC',
+  DESCENDING = 'DESC',
+}
+export declare type EnumElement<Enum> = Enum[keyof Enum];
+export declare type StandardFilterEnum<T> = Record<keyof T, string>;
+export declare type FilterBase<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Enum extends StandardFilterEnum<any>,
+  T
+> = Record<EnumElement<Enum>, T>;
+export declare type FilterContent = string | Array<string> | undefined;
+export declare type Filters<Enum extends StandardFilterEnum<unknown>> =
+  FilterBase<Enum, FilterContent>;
